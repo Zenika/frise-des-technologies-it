@@ -1,0 +1,14 @@
+
+= Frise des technologies IT
+
+Les personnes participantes à l'animation :
+
+* recherchent des logos de technologies
+* doivent la deviner
+* on la positionne ensemble sur le fond de frise
+
+Chaque technologie peut avoir plusieurs fois son logo, une fois pour chaque version qu'on choisit de faire figurer sur la frise.
+
+== Installation du projet
+
+TODO
