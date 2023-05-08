@@ -1,0 +1,25 @@
+{
+  "name": "techno-timeline-poc",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "prettier --write ."
+  },
+  "devDependencies": {
+    "@types/d3-array": "^3.0.4",
+    "@types/d3-scale": "^4.0.3",
+    "@types/d3-selection": "^3.0.5",
+    "prettier": "^2.8.8",
+    "typescript": "^5.0.2",
+    "vite": "^4.3.2"
+  },
+  "dependencies": {
+    "d3-array": "^3.2.3",
+    "d3-scale": "^4.0.2",
+    "d3-selection": "^3.0.0"
+  }
+}
