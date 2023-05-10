@@ -1,9 +1,33 @@
 :root {
-  --node-stroke-width: 3
+  --node-stroke-width: 3;
+  --node-radius: 10;
+}
+
+#app {
+  display: inline-block;
+  position: relative;
+  width: 100%;
+  padding-bottom: 100%;
+  vertical-align: top;
+  overflow: hidden;
+}
+
+svg {
+  display: inline-block;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 .node {
-  fill: none;
+  fill: white;
   stroke-width: var(--node-stroke-width);
   stroke: black;
+}
+
+.link {
+  fill: none;
+  stroke-width: var(--node-radius);
+  stroke: grey;
+  opacity: 0.4;
 }

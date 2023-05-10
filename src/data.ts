@@ -27,4 +27,14 @@ const data = {
   ],
 }
 
+export interface RawNode {
+  id: number
+  name: string
+  date: string
+}
+
+export interface Node extends Omit<RawNode, 'date'> {
+  date: Date
+}
+
 export default data
