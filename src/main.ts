@@ -3,6 +3,8 @@ import { select } from 'd3-selection'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { extent } from 'd3-array'
 import { curveBumpX, line as d3Line } from 'd3-shape'
+import { axisBottom } from 'd3-axis'
+import { timeYear } from 'd3-time'
 
 import data, { Node } from './data.ts'
 
@@ -25,7 +27,8 @@ const graphGroupSelection = svgSelection
 
 const linkGroupSelection = graphGroupSelection.append('g')
 const nodeGroupSelection = graphGroupSelection.append('g')
-// .attr('transform', `translate(${nodeRadius + nodeStrokeWidth / 2} ${nodeRadius + nodeStrokeWidth / 2})`)
+
+const axisGroupSelection = svgSelection.append('g')
 
 const { links } = data
 
@@ -41,6 +44,8 @@ const x = scaleTime()
   .range([0, width - 2 * nodeRadius - nodeStrokeWidth])
 
 const y = scaleLinear().domain([0, nodes.length]).range([0, height])
+
+axisGroupSelection.attr('transform', `translate(0, ${height - 20})`).call(axisBottom(x).ticks(timeYear.every(3)))
 
 const line = d3Line().curve(curveBumpX)
 
