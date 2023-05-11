@@ -3,6 +3,9 @@
   --node-radius: 10;
 }
 
+/*
+ * adapted from https://chartio.com/resources/tutorials/how-to-resize-an-svg-when-the-window-is-resized-in-d3-js/
+ */
 #app {
   display: inline-block;
   position: relative;
@@ -23,6 +26,10 @@ svg {
   fill: white;
   stroke-width: var(--node-stroke-width);
   stroke: black;
+}
+
+.node:hover {
+  cursor: row-resize;
 }
 
 .link {

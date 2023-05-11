@@ -7,6 +7,12 @@ dependencies:
   d3-axis:
     specifier: ^3.0.0
     version: 3.0.0
+  d3-drag:
+    specifier: ^3.0.0
+    version: 3.0.0
+  d3-force:
+    specifier: ^3.0.0
+    version: 3.0.0
   d3-scale:
     specifier: ^4.0.2
     version: 4.0.2
@@ -27,6 +33,12 @@ devDependencies:
   '@types/d3-axis':
     specifier: ^3.0.2
     version: 3.0.2
+  '@types/d3-drag':
+    specifier: ^3.0.2
+    version: 3.0.2
+  '@types/d3-force':
+    specifier: ^3.0.4
+    version: 3.0.4
   '@types/d3-scale':
     specifier: ^4.0.3
     version: 4.0.3
@@ -259,6 +271,16 @@ packages:
       '@types/d3-selection': 3.0.5
     dev: true
 
+  /@types/d3-drag@3.0.2:
+    resolution: {integrity: sha512-qmODKEDvyKWVHcWWCOVcuVcOwikLVsyc4q4EBJMREsoQnR2Qoc2cZQUyFUPgO9q4S3qdSqJKBsuefv+h0Qy+tw==}
+    dependencies:
+      '@types/d3-selection': 3.0.5
+    dev: true
+
+  /@types/d3-force@3.0.4:
+    resolution: {integrity: sha512-q7xbVLrWcXvSBBEoadowIUJ7sRpS1yvgMWnzHJggFy5cUZBq2HZL5k/pBSm0GdYWS1vs5/EDwMjSKF55PDY4Aw==}
+    dev: true
+
   /@types/d3-path@3.0.0:
     resolution: {integrity: sha512-0g/A+mZXgFkQxN3HniRDbXMN79K3CdTpLsevj+PXiTcb2hVyvkZUBg37StmgCQkaD84cUJ4uaDAWq7UJOQy2Tg==}
     dev: true
@@ -300,6 +322,28 @@ packages:
     engines: {node: '>=12'}
     dev: false
 
+  /d3-dispatch@3.0.1:
+    resolution: {integrity: sha512-rzUyPU/S7rwUflMyLc1ETDeBj0NRuHKKAcvukozwhshr6g6c5d8zh4c2gQjY2bZ0dXeGLWc1PF174P2tVvKhfg==}
+    engines: {node: '>=12'}
+    dev: false
+
+  /d3-drag@3.0.0:
+    resolution: {integrity: sha512-pWbUJLdETVA8lQNJecMxoXfH6x+mO2UQo8rSmZ+QqxcbyA3hfeprFgIT//HW2nlHChWeIIMwS2Fq+gEARkhTkg==}
+    engines: {node: '>=12'}
+    dependencies:
+      d3-dispatch: 3.0.1
+      d3-selection: 3.0.0
+    dev: false
+
+  /d3-force@3.0.0:
+    resolution: {integrity: sha512-zxV/SsA+U4yte8051P4ECydjD/S+qeYtnaIyAs9tgHCqfguma/aAQDjo85A9Z6EKhBirHRJHXIgJUlffT4wdLg==}
+    engines: {node: '>=12'}
+    dependencies:
+      d3-dispatch: 3.0.1
+      d3-quadtree: 3.0.1
+      d3-timer: 3.0.1
+    dev: false
+
   /d3-format@3.1.0:
     resolution: {integrity: sha512-YyUI6AEuY/Wpt8KWLgZHsIU86atmikuoOmCfommt0LYHiQSPjvX2AcFc38PX0CBpr2RCyZhjex+NS/LPOv6YqA==}
     engines: {node: '>=12'}
@@ -314,6 +358,11 @@ packages:
 
   /d3-path@3.1.0:
     resolution: {integrity: sha512-p3KP5HCf/bvjBSSKuXid6Zqijx7wIfNW+J/maPs+iwR35at5JCbLUT0LzF1cnjbCHWhqzQTIN2Jpe8pRebIEFQ==}
+    engines: {node: '>=12'}
+    dev: false
+
+  /d3-quadtree@3.0.1:
+    resolution: {integrity: sha512-04xDrxQTDTCFwP5H6hRhsRcb9xxv2RzkcsygFzmkSIOJy3PeRJP7sNk3VRIbKXcog561P9oU0/rVH6vDROAgUw==}
     engines: {node: '>=12'}
     dev: false
 
@@ -352,6 +401,11 @@ packages:
     engines: {node: '>=12'}
     dependencies:
       d3-array: 3.2.3
+    dev: false
+
+  /d3-timer@3.0.1:
+    resolution: {integrity: sha512-ndfJ/JxxMd3nw31uyKoY2naivF+r29V+Lc0svZxe1JvvIRmi8hUsrMvdOwgS1o6uBHmiz91geQ0ylPP0aj1VUA==}
+    engines: {node: '>=12'}
     dev: false
 
   /esbuild@0.17.18:

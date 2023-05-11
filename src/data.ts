@@ -1,3 +1,5 @@
+import { SimulationNodeDatum } from 'd3-force'
+
 const data = {
   nodes: [
     { id: 0, name: 'Python 1', date: '1994-01-01T00:00:00Z' },
@@ -27,13 +29,9 @@ const data = {
   ],
 }
 
-export interface RawNode {
+export interface Node extends SimulationNodeDatum {
   id: number
   name: string
-  date: string
-}
-
-export interface Node extends Omit<RawNode, 'date'> {
   date: Date
 }
 
