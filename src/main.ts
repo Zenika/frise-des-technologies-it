@@ -65,8 +65,6 @@ linkSelection
     const target = nodeMap.get(d.target) as Node
     return line([
       [nodeX(source), nodeY(source, nodes.indexOf(source))],
-      [nodeX(source), nodeY(source, nodes.indexOf(source))],
-      [nodeX(target), nodeY(target, nodes.indexOf(target))],
       [nodeX(target), nodeY(target, nodes.indexOf(target))],
     ])
   })
