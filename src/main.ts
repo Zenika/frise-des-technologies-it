@@ -1,17 +1,17 @@
-import './style.css'
-import { select } from 'd3-selection'
-import { scaleTime } from 'd3-scale'
 import { extent } from 'd3-array'
-import { curveBumpX, line as d3Line } from 'd3-shape'
 import { axisBottom } from 'd3-axis'
-import { timeYear } from 'd3-time'
 import type { DraggedElementBaseType } from 'd3-drag'
 import { drag as d3Drag } from 'd3-drag'
+import { forceCollide, forceManyBody, forceSimulation, forceX } from 'd3-force'
+import type { Simulation } from 'd3-force'
+import { scaleTime } from 'd3-scale'
+import { select } from 'd3-selection'
+import { curveBumpX, line as d3Line } from 'd3-shape'
+import { timeYear } from 'd3-time'
 
-import type { Node } from './types.ts'
-import { Data } from './types.ts'
 import { default as rawData } from './data.ts'
-import { forceCollide, forceManyBody, forceSimulation, forceX, Simulation } from 'd3-force'
+import './style.css'
+import type { Data, Node } from './types.ts'
 
 const width = 1920 / 2
 const height = 1080 / 2

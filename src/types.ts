@@ -1,4 +1,4 @@
-import { SimulationNodeDatum } from 'd3-force'
+import type { SimulationNodeDatum } from 'd3-force'
 
 export interface Node extends SimulationNodeDatum {
   id: number
