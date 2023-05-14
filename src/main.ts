@@ -5,10 +5,12 @@ import { extent } from 'd3-array'
 import { curveBumpX, line as d3Line } from 'd3-shape'
 import { axisBottom } from 'd3-axis'
 import { timeYear } from 'd3-time'
+import type { DraggedElementBaseType } from 'd3-drag'
 import { drag as d3Drag } from 'd3-drag'
 
+import type { Node } from './types.ts'
+import { Data } from './types.ts'
 import { default as rawData } from './data.ts'
-import type { Node } from './data.ts'
 import { forceCollide, forceManyBody, forceSimulation, forceX, Simulation } from 'd3-force'
 
 const width = 1920 / 2
@@ -32,7 +34,7 @@ const nodesGroup = graph.append('g')
 
 const axis = svg.append('g')
 
-const data = {
+const data: Data = {
   ...rawData,
   nodes: rawData.nodes.map(({ date, ...rest }) => ({ date: new Date(date), ...rest })),
 }
@@ -57,9 +59,9 @@ const x = (d: Node) => xScale(d.date)
 const links = linksGroup.selectAll('.link').data(data.links).join('svg:path').classed('link', true)
 
 const nodes = nodesGroup
-  .selectAll('.node')
-  .data(data.nodes)
-  .join('svg:circle')
+  .selectAll<SVGCircleElement, Node>('.node')
+  .data<Node>(data.nodes)
+  .join<SVGCircleElement>('svg:circle')
   .classed('node', true)
   .attr('r', 10)
   .attr('title', ({ name }) => name)
@@ -76,7 +78,7 @@ const ticked = () => {
   nodes.attr('cx', x).attr('cy', (d) => d.y as number)
 }
 
-const simulation = forceSimulation<Node>(data.nodes)
+const simulation: Simulation<Node, undefined> = forceSimulation<Node>(data.nodes)
   .force('charge', forceManyBody<Node>().strength(-1))
   .force('x', forceX<Node>().x(x).strength(1))
   .force(
@@ -87,8 +89,8 @@ const simulation = forceSimulation<Node>(data.nodes)
   )
   .on('tick', ticked)
 
-const drag = (simulation: Simulation<Node, undefined>) =>
-  d3Drag()
+const drag = <GElement extends DraggedElementBaseType, Datum>(simulation: Simulation<Node, undefined>) =>
+  d3Drag<GElement, Datum>()
     .on('start', (event) => {
       if (!event.active) {
         simulation.alphaTarget(0.3).restart()
@@ -106,4 +108,4 @@ const drag = (simulation: Simulation<Node, undefined>) =>
       event.subject.fy = null
     })
 
-nodes.call(drag(simulation))
+nodes.call(drag<SVGCircleElement, Node>(simulation))

@@ -1,5 +1,3 @@
-import { SimulationNodeDatum } from 'd3-force'
-
 const data = {
   nodes: [
     { id: 0, name: 'Python 1', date: '1994-01-01T00:00:00Z' },
@@ -27,12 +25,6 @@ const data = {
     { source: 8, target: 11 },
     { source: 10, target: 11 },
   ],
-}
-
-export interface Node extends SimulationNodeDatum {
-  id: number
-  name: string
-  date: Date
 }
 
 export default data
