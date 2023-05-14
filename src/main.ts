@@ -7,10 +7,9 @@ import { axisBottom } from 'd3-axis'
 import { timeYear } from 'd3-time'
 import { drag as d3Drag } from 'd3-drag'
 
-import data, { Node } from './data.ts'
+import { default as rawData } from './data.ts'
+import type { Node } from './data.ts'
 import { forceCollide, forceManyBody, forceSimulation, forceX, Simulation } from 'd3-force'
-
-data.nodes.sort(() => 0.5 - Math.random())
 
 const width = 1920 / 2
 const height = 1080 / 2
@@ -18,43 +17,68 @@ const height = 1080 / 2
 const nodeStrokeWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--node-stroke-width'), 10)
 const nodeRadius = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--node-radius'), 10)
 
-const svgSelection = select('#app')
+const svg = select('#app')
   .append('svg:svg')
   .attr('preserveAspectRatio', 'xMinYMin meet')
   .attr('viewBox', `0 0 ${width} ${height}`)
   .attr('pointer-events', 'all')
 
-const graphGroupSelection = svgSelection
+const graph = svg
   .append('g')
   .attr('transform', `translate(${nodeRadius + nodeStrokeWidth / 2} ${height / 2 + nodeRadius + nodeStrokeWidth / 2})`)
 
-const linkGroupSelection = graphGroupSelection.append('g')
-const nodeGroupSelection = graphGroupSelection.append('g')
+const linksGroup = graph.append('g')
+const nodesGroup = graph.append('g')
 
-const axisGroupSelection = svgSelection.append('g')
+const axis = svg.append('g')
 
-const { links } = data
-
-const nodes: Node[] = data.nodes.map(({ date, ...rest }) => ({ date: new Date(date), ...rest }))
-const nodeMap = nodes.reduce((acc, node) => {
+const data = {
+  ...rawData,
+  nodes: rawData.nodes.map(({ date, ...rest }) => ({ date: new Date(date), ...rest })),
+}
+const nodeMap = data.nodes.reduce((acc, node) => {
   acc.set(node.id, node)
   return acc
 }, new Map<number, Node>())
-const xDomain: [Date, Date] = extent(data.nodes.map(({ date }) => new Date(date))) as [Date, Date]
 
-const x = scaleTime()
+const xDomain: [Date, Date] =
+  data.nodes.length >= 2 ? (extent(data.nodes.map(({ date }) => date)) as [Date, Date]) : [new Date(0), new Date()]
+
+const xScale = scaleTime()
   .domain(xDomain)
   .range([0, width - 2 * nodeRadius - nodeStrokeWidth])
 
-axisGroupSelection.attr('transform', `translate(0, ${height - 20})`).call(axisBottom(x).ticks(timeYear.every(3)))
+axis.attr('transform', `translate(0, ${height - 20})`).call(axisBottom(xScale).ticks(timeYear.every(3)))
 
 const line = d3Line().curve(curveBumpX)
 
-const nodeX = (d: Node) => x(d.date)
+const x = (d: Node) => xScale(d.date)
 
-const simulation = forceSimulation<Node>(nodes)
+const links = linksGroup.selectAll('.link').data(data.links).join('svg:path').classed('link', true)
+
+const nodes = nodesGroup
+  .selectAll('.node')
+  .data(data.nodes)
+  .join('svg:circle')
+  .classed('node', true)
+  .attr('r', 10)
+  .attr('title', ({ name }) => name)
+
+const ticked = () => {
+  links.attr('d', (d) => {
+    const source = nodeMap.get(d.source) as Node
+    const target = nodeMap.get(d.target) as Node
+    return line([
+      [x(source), source.y as number],
+      [x(target), target.y as number],
+    ])
+  })
+  nodes.attr('cx', x).attr('cy', (d) => d.y as number)
+}
+
+const simulation = forceSimulation<Node>(data.nodes)
   .force('charge', forceManyBody<Node>().strength(-1))
-  .force('x', forceX<Node>().x(nodeX).strength(1))
+  .force('x', forceX<Node>().x(x).strength(1))
   .force(
     'collision',
     forceCollide()
@@ -63,29 +87,8 @@ const simulation = forceSimulation<Node>(nodes)
   )
   .on('tick', ticked)
 
-const linkSelection = linkGroupSelection.selectAll('.link').data(links).join('svg:path').classed('link', true)
-
-const nodeSelection = nodeGroupSelection
-  .selectAll('.node')
-  .data(nodes)
-  .join('svg:circle')
-  .classed('node', true)
-  .attr('r', 10)
-  .attr('title', ({ name }) => name)
-
-function ticked() {
-  linkSelection.attr('d', (d) => {
-    const source = nodeMap.get(d.source) as Node
-    const target = nodeMap.get(d.target) as Node
-    return line([
-      [nodeX(source), source.y as number],
-      [nodeX(target), target.y as number],
-    ])
-  })
-  nodeSelection.attr('cx', nodeX).attr('cy', (d) => d.y as number)
-}
-function drag(simulation: Simulation<Node, undefined>) {
-  return d3Drag()
+const drag = (simulation: Simulation<Node, undefined>) =>
+  d3Drag()
     .on('start', (event) => {
       if (!event.active) {
         simulation.alphaTarget(0.3).restart()
@@ -102,6 +105,5 @@ function drag(simulation: Simulation<Node, undefined>) {
       event.subject.fx = null
       event.subject.fy = null
     })
-}
 
-nodeSelection.call(drag(simulation))
+nodes.call(drag(simulation))
