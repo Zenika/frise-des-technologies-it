@@ -7,13 +7,11 @@ export interface Node extends SimulationNodeDatum {
 }
 
 export interface Link {
-  source: number
-  target: number
+  source: Node
+  target: Node
 }
 
 export interface Data {
   nodes: Node[]
   links: Link[]
 }
-
-export type NodeSelection = SVGCircleElement

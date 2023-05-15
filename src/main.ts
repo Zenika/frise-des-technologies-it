@@ -2,8 +2,8 @@ import { extent } from 'd3-array'
 import { axisBottom } from 'd3-axis'
 import type { DraggedElementBaseType } from 'd3-drag'
 import { drag as d3Drag } from 'd3-drag'
-import { forceCollide, forceManyBody, forceSimulation, forceX } from 'd3-force'
 import type { Simulation } from 'd3-force'
+import { forceCollide, forceManyBody, forceSimulation, forceX } from 'd3-force'
 import { scaleTime } from 'd3-scale'
 import { select } from 'd3-selection'
 import { curveBumpX, line as d3Line } from 'd3-shape'
@@ -11,7 +11,7 @@ import { timeYear } from 'd3-time'
 
 import { default as rawData } from './data.ts'
 import './style.css'
-import type { Data, Node } from './types.ts'
+import type { Data, Link, Node } from './types.ts'
 
 const width = 1920 / 2
 const height = 1080 / 2
@@ -34,20 +34,29 @@ const nodesGroup = graph.append('g')
 
 const axis = svg.append('g')
 
-const data: Data = {
-  ...rawData,
-  nodes: rawData.nodes.map(({ date, ...rest }) => ({ date: new Date(date), ...rest })),
-}
-const nodeMap = data.nodes.reduce((acc, node) => {
-  acc.set(node.id, node)
+const nodeMap = rawData.nodes.reduce((acc, { id, date, ...rest }) => {
+  acc.set(id, { id, date: new Date(date), ...rest })
   return acc
 }, new Map<number, Node>())
 
-const xDomain: [Date, Date] =
-  data.nodes.length >= 2 ? (extent(data.nodes.map(({ date }) => date)) as [Date, Date]) : [new Date(0), new Date()]
+const data: Data = {
+  nodes: [...nodeMap.values()],
+  links: rawData.links.reduce((acc, { source: sourceId, target: targetId }) => {
+    const source = nodeMap.get(sourceId)
+    const target = nodeMap.get(targetId)
+    if (source && target) {
+      acc.push({ source, target })
+    } else {
+      throw Error(`Cannot find node with id = ${source ? targetId : sourceId}`)
+    }
+    return acc
+  }, [] as Link[]),
+}
 
 const xScale = scaleTime()
-  .domain(xDomain)
+  .domain(
+    data.nodes.length >= 2 ? (extent(data.nodes.map(({ date }) => date)) as [Date, Date]) : [new Date(0), new Date()]
+  )
   .range([0, width - 2 * nodeRadius - nodeStrokeWidth])
 
 axis.attr('transform', `translate(0, ${height - 20})`).call(axisBottom(xScale).ticks(timeYear.every(3)))
@@ -56,20 +65,24 @@ const line = d3Line().curve(curveBumpX)
 
 const x = (d: Node) => xScale(d.date)
 
-const links = linksGroup.selectAll('.link').data(data.links).join('svg:path').classed('link', true)
+const links = linksGroup
+  .selectAll<SVGElementTagNameMap['path'], Link>('.link')
+  .data(data.links)
+  .join('path')
+  .classed('link', true)
 
 const nodes = nodesGroup
-  .selectAll<SVGCircleElement, Node>('.node')
+  .selectAll<SVGElementTagNameMap['circle'], Node>('.node')
   .data<Node>(data.nodes)
-  .join<SVGCircleElement>('svg:circle')
+  .join('circle')
   .classed('node', true)
   .attr('r', 10)
   .attr('title', ({ name }) => name)
 
 const ticked = () => {
   links.attr('d', (d) => {
-    const source = nodeMap.get(d.source) as Node
-    const target = nodeMap.get(d.target) as Node
+    const source = d.source
+    const target = d.target
     return line([
       [x(source), source.y as number],
       [x(target), target.y as number],
@@ -89,8 +102,8 @@ const simulation: Simulation<Node, undefined> = forceSimulation<Node>(data.nodes
   )
   .on('tick', ticked)
 
-const drag = <GElement extends DraggedElementBaseType, Datum>(simulation: Simulation<Node, undefined>) =>
-  d3Drag<GElement, Datum>()
+const drag = <DraggedElement extends DraggedElementBaseType, Datum>(simulation: Simulation<Node, undefined>) =>
+  d3Drag<DraggedElement, Datum>()
     .on('start', (event) => {
       if (!event.active) {
         simulation.alphaTarget(0.3).restart()
@@ -108,4 +121,4 @@ const drag = <GElement extends DraggedElementBaseType, Datum>(simulation: Simula
       event.subject.fy = null
     })
 
-nodes.call(drag<SVGCircleElement, Node>(simulation))
+nodes.call(drag<SVGElementTagNameMap['circle'], Node>(simulation))
