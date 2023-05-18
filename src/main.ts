@@ -63,15 +63,17 @@ axis.attr('transform', `translate(0, ${height - 20})`).call(axisBottom(xScale).t
 
 const line = d3Line().curve(curveBumpX)
 
-const x = (d: Node) => xScale(d.date)
+const x = ({ date }: Node) => xScale(date)
 
 const links = linksGroup
+  // we need to specify the Element type in generic as it cannot be inferred by the selector
   .selectAll<SVGElementTagNameMap['path'], Link>('.link')
   .data(data.links)
   .join('path')
   .classed('link', true)
 
 const nodes = nodesGroup
+  // we need to specify the Element type in generic as it cannot be inferred by the selector
   .selectAll<SVGElementTagNameMap['circle'], Node>('.node')
   .data<Node>(data.nodes)
   .join('circle')
@@ -80,15 +82,14 @@ const nodes = nodesGroup
   .attr('title', ({ name }) => name)
 
 const ticked = () => {
-  links.attr('d', (d) => {
-    const source = d.source
-    const target = d.target
+  // in this function we know y is not undefined because its value has been set when the simulation started
+  links.attr('d', ({ source, target }: Link) => {
     return line([
       [x(source), source.y as number],
       [x(target), target.y as number],
     ])
   })
-  nodes.attr('cx', x).attr('cy', (d) => d.y as number)
+  nodes.attr('cx', x).attr('cy', ({ y }) => y as number)
 }
 
 const simulation: Simulation<Node, undefined> = forceSimulation<Node>(data.nodes)
