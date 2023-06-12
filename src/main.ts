@@ -2,7 +2,7 @@ import { extent } from 'd3-array'
 import { axisBottom } from 'd3-axis'
 import type { DraggedElementBaseType } from 'd3-drag'
 import { drag as d3Drag } from 'd3-drag'
-import type { Simulation } from 'd3-force'
+import type { Force, Simulation } from 'd3-force'
 import { forceCollide, forceManyBody, forceSimulation, forceX } from 'd3-force'
 import { scaleTime } from 'd3-scale'
 import { select } from 'd3-selection'
@@ -13,8 +13,8 @@ import { default as rawData } from './data.ts'
 import './style.css'
 import type { Data, Link, Node } from './types.ts'
 
-const width = 1920 / 2
-const height = 1080 / 2
+const width = window.innerWidth / 2
+const height = window.innerHeight / 2
 
 const nodeStrokeWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--node-stroke-width'), 10)
 const nodeRadius = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--node-radius'), 10)
@@ -27,7 +27,7 @@ const svg = select('#app')
 
 const graph = svg
   .append('g')
-  .attr('transform', `translate(${nodeRadius + nodeStrokeWidth / 2} ${height / 2 + nodeRadius + nodeStrokeWidth / 2})`)
+  .attr('transform', `translate(${nodeRadius + nodeStrokeWidth / 2} ${nodeRadius + nodeStrokeWidth / 2})`)
 
 const linksGroup = graph.append('g')
 const nodesGroup = graph.append('g')
@@ -92,6 +92,15 @@ const ticked = () => {
   nodes.attr('cx', x).attr('cy', ({ y }) => y as number)
 }
 
+const forceLimits: Force<Node, undefined> = () => {
+  data.nodes.forEach((node) => {
+    const y = node.y as number
+    const min = 20
+    const max = height - 30
+    node.y = y < min ? min : y > max ? max : y
+  })
+}
+
 const simulation: Simulation<Node, undefined> = forceSimulation<Node>(data.nodes)
   .force('charge', forceManyBody<Node>().strength(-1))
   .force('x', forceX<Node>().x(x).strength(1))
@@ -101,6 +110,7 @@ const simulation: Simulation<Node, undefined> = forceSimulation<Node>(data.nodes
       .radius(() => nodeRadius * 5)
       .strength(1)
   )
+  .force('limits', forceLimits)
   .on('tick', ticked)
 
 const drag = <DraggedElement extends DraggedElementBaseType, Datum>(simulation: Simulation<Node, undefined>) =>
