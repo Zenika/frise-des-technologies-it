@@ -3,7 +3,7 @@ import { axisBottom } from 'd3-axis'
 import type { DraggedElementBaseType } from 'd3-drag'
 import { drag as d3Drag } from 'd3-drag'
 import type { Force, Simulation } from 'd3-force'
-import { forceCollide, forceManyBody, forceSimulation, forceX } from 'd3-force'
+import { forceCollide, forceLink, forceManyBody, forceSimulation, forceX } from 'd3-force'
 import { scaleTime } from 'd3-scale'
 import { select } from 'd3-selection'
 import { curveBumpX, line as d3Line } from 'd3-shape'
@@ -130,7 +130,7 @@ const forceLimits: Force<Node, undefined> = () => {
   })
 }
 
-const simulation: Simulation<Node, undefined> = forceSimulation<Node>(data.nodes)
+const simulation: Simulation<Node, Link> = forceSimulation<Node>(data.nodes)
   .force('charge', forceManyBody<Node>().strength(-1))
   .force('x', forceX<Node>().x(x).strength(1))
   .force(
@@ -140,6 +140,7 @@ const simulation: Simulation<Node, undefined> = forceSimulation<Node>(data.nodes
       .strength(1)
   )
   .force('limits', forceLimits)
+  .force('links', forceLink(data.links))
   .on('tick', ticked)
 
 const drag = <DraggedElement extends DraggedElementBaseType, Datum>(simulation: Simulation<Node, undefined>) =>
