@@ -55,7 +55,7 @@ const axis = content.append('g')
 const nodeMap = rawData.nodes.reduce((acc, { id, date, ...rest }) => {
   acc.set(id, { id, date: new Date(date), ...rest })
   return acc
-}, new Map<number, Node>())
+}, new Map<string, Node>())
 
 const data: Data = {
   nodes: [...nodeMap.values()],
