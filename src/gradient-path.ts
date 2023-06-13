@@ -1,4 +1,6 @@
 import { range } from 'd3-array'
+import { interpolateRainbow } from 'd3-scale-chromatic'
+import { select } from 'd3-selection'
 
 interface Point extends Array<number> {
   t?: number
@@ -92,3 +94,23 @@ const perp = (p0: Point, p1: Point) => {
     u01d = Math.sqrt(u01x * u01x + u01y * u01y)
   return [u01x / u01d, u01y / u01d]
 }
+
+const color = interpolateRainbow
+setTimeout(() => {
+  const path = select('path').remove()
+
+  select('svg')
+    .selectAll<SVGElementTagNameMap['path'], unknown>('path')
+    .data(quads(samples(path.node() as SVGPathElement, 8)))
+    .enter()
+    .append('path')
+    .style('fill', function (d) {
+      return color(d.t as number)
+    })
+    .style('stroke', function (d) {
+      return color(d.t as number)
+    })
+    .attr('d', function (d) {
+      return lineJoin(d[0], d[1], d[2], d[3], 32)
+    })
+}, 2000)
