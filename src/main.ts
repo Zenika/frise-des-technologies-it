@@ -16,8 +16,24 @@ import type { Data, Link, Node } from './types.ts'
 const width = window.innerWidth / 2
 const height = window.innerHeight / 2
 
-const nodeStrokeWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--node-stroke-width'), 10)
-const nodeRadius = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--node-radius'), 10)
+const styles = {
+  node: {
+    fill: 'white',
+    height: 50,
+    stroke: 'black',
+    'stroke-width': 3,
+    width: 60,
+  },
+  link: {
+    fill: 'none',
+    opacity: 0.4,
+    stroke: 'grey',
+    'stroke-width': 10,
+  },
+  axis: {
+    height: height - 20,
+  },
+}
 
 const svg = select('#app')
   .append('svg:svg')
@@ -25,14 +41,16 @@ const svg = select('#app')
   .attr('viewBox', `0 0 ${width} ${height}`)
   .attr('pointer-events', 'all')
 
-const graph = svg
+const content = svg
   .append('g')
-  .attr('transform', `translate(${nodeRadius + nodeStrokeWidth / 2} ${nodeRadius + nodeStrokeWidth / 2})`)
+  .attr('transform', `translate(${(styles.node.width + styles.node['stroke-width']) / 2}, 0)`)
+
+const graph = content.append('g')
 
 const linksGroup = graph.append('g')
 const nodesGroup = graph.append('g')
 
-const axis = svg.append('g')
+const axis = content.append('g')
 
 const nodeMap = rawData.nodes.reduce((acc, { id, date, ...rest }) => {
   acc.set(id, { id, date: new Date(date), ...rest })
@@ -57,9 +75,9 @@ const xScale = scaleTime()
   .domain(
     data.nodes.length >= 2 ? (extent(data.nodes.map(({ date }) => date)) as [Date, Date]) : [new Date(0), new Date()]
   )
-  .range([0, width - 2 * nodeRadius - nodeStrokeWidth])
+  .range([0, width - styles.node.width - styles.node['stroke-width']])
 
-axis.attr('transform', `translate(0, ${height - 20})`).call(axisBottom(xScale).ticks(timeYear.every(3)))
+axis.attr('transform', `translate(0, ${styles.axis.height})`).call(axisBottom(xScale).ticks(timeYear.every(3)))
 
 const line = d3Line().curve(curveBumpX)
 
@@ -72,14 +90,25 @@ const links = linksGroup
   .join('path')
   .classed('link', true)
 
+Object.keys(styles.link).forEach((key) => {
+  links.style(key, styles.link[key as keyof typeof styles.link])
+})
+
 const nodes = nodesGroup
   // we need to specify the Element type in generic as it cannot be inferred by the selector
-  .selectAll<SVGElementTagNameMap['circle'], Node>('.node')
+  .selectAll<SVGElementTagNameMap['rect'], Node>('.node')
   .data<Node>(data.nodes)
-  .join('circle')
+  .join('rect')
   .classed('node', true)
-  .attr('r', 10)
+  .attr('width', styles.node.width)
+  .attr('height', styles.node.height)
+  .attr('rx', styles.link['stroke-width'])
+  .attr('transform', `translate(-${styles.node.width / 2}, -${styles.node.height / 2})`)
   .attr('title', ({ name }) => name)
+
+Object.keys(styles.node).forEach((key) => {
+  nodes.style(key, styles.node[key as keyof typeof styles.node])
+})
 
 const ticked = () => {
   // in this function we know y is not undefined because its value has been set when the simulation started
@@ -89,14 +118,14 @@ const ticked = () => {
       [x(target), target.y as number],
     ])
   })
-  nodes.attr('cx', x).attr('cy', ({ y }) => y as number)
+  nodes.attr('x', x).attr('y', ({ y }) => y as number)
 }
 
 const forceLimits: Force<Node, undefined> = () => {
   data.nodes.forEach((node) => {
     const y = node.y as number
-    const min = 20
-    const max = height - 30
+    const min = (styles.node.height + styles.node['stroke-width']) / 2
+    const max = styles.axis.height - (styles.node.height + styles.node['stroke-width']) / 2
     node.y = y < min ? min : y > max ? max : y
   })
 }
@@ -107,7 +136,7 @@ const simulation: Simulation<Node, undefined> = forceSimulation<Node>(data.nodes
   .force(
     'collision',
     forceCollide()
-      .radius(() => nodeRadius * 5)
+      .radius(() => (styles.node.width / 2) * 3)
       .strength(1)
   )
   .force('limits', forceLimits)
@@ -132,4 +161,4 @@ const drag = <DraggedElement extends DraggedElementBaseType, Datum>(simulation: 
       event.subject.fy = null
     })
 
-nodes.call(drag<SVGElementTagNameMap['circle'], Node>(simulation))
+nodes.call(drag<SVGElementTagNameMap['rect'], Node>(simulation))
