@@ -136,11 +136,11 @@ const simulation: Simulation<Node, Link> = forceSimulation<Node>(data.nodes)
   .force(
     'collision',
     forceCollide()
-      .radius(() => (styles.node.width / 2) * 3)
-      .strength(1)
+      .radius(() => Math.max(styles.node.width, styles.node.height)) // empirically determined
+      .strength(0.8)
   )
   .force('limits', forceLimits)
-  .force('links', forceLink(data.links))
+  .force('links', forceLink(data.links).strength(1))
   .on('tick', ticked)
 
 const drag = <DraggedElement extends DraggedElementBaseType, Datum>(simulation: Simulation<Node, undefined>) =>
