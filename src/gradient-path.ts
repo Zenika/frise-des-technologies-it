@@ -1,116 +1,151 @@
-import { range } from 'd3-array'
 import { interpolateRainbow } from 'd3-scale-chromatic'
 import { select } from 'd3-selection'
 
-interface Point extends Array<number> {
-  t?: number
-}
-
-interface Points extends Array<Point> {
-  t?: number
+interface Point {
+  x: number
+  y: number
 }
 
 /**
- * Sample the SVG path uniformly with the specified precision.
- * @param path
- * @param precision
+ * A vector has X and Y coordinates, just like a point.
  */
-const samples: (path: SVGPathElement, precision: number) => Point[] = (path: SVGPathElement, precision: number) => {
-  const n = path.getTotalLength(),
-    t = [0]
-  let i = 0
-  while ((i += precision) < n) t.push(i)
-  t.push(n)
-  return t.map(function (t) {
-    const p = path.getPointAtLength(t)
-    const a: Point = [p.x, p.y]
-    a.t = t / n
-    return a
+type Vector = Point
+
+type Segment = [Point, Point]
+
+interface StepPoint extends Point {
+  progress: number
+}
+
+interface Chunk {
+  p0: StepPoint | undefined
+  p1: StepPoint
+  p2: StepPoint
+  p3: StepPoint | undefined
+  progress: number
+}
+
+/**
+ Splits an SVG path into an array of points based on a specified sample length.
+ @param {SVGPathElement} path - The SVG path element to be split.
+ @param {number} sampleLength - The length between each sampled point.
+ @returns {StepPoint[]} An array of points representing the split path.
+ */
+const split: (path: SVGPathElement, sampleLength: number) => StepPoint[] = (
+  path: SVGPathElement,
+  sampleLength: number
+) => {
+  const totalLength = path.getTotalLength()
+  const steps = [
+    0,
+    ...Array.from({ length: Math.ceil(totalLength / sampleLength) }).map((_, i) =>
+      Math.min((i + 1) * sampleLength, totalLength)
+    ),
+  ]
+  return steps.map((step) => {
+    const { x, y } = path.getPointAtLength(step)
+    return { x, y, progress: step / totalLength }
   })
 }
 
 /**
- * Compute quads of adjacent points [p0, p1, p2, p3].
- * @param points
+ * Compute chunks of adjacent step points [P0, P1, P2, P3].
+ * @param {StepPoint[]} stepPoints - step points
+ * @returns {Chunk[]} Chunks of four adjacent step points
  */
-const quads = (points: Points) => {
-  return range(points.length - 1).map((i) => {
-    const a: Points = [points[i - 1], points[i], points[i + 1], points[i + 2]]
-    a.t = ((points[i].t as number) + (points[i + 1].t as number)) / 2
-    return a
-  })
+const chunks = (stepPoints: StepPoint[]): Chunk[] =>
+  stepPoints.length > 1
+    ? Array.from({ length: stepPoints.length - 1 }).map<Chunk>((_, i) => ({
+        p0: stepPoints[i - 1],
+        p1: stepPoints[i],
+        p2: stepPoints[i + 1],
+        p3: stepPoints[i + 2],
+        progress: (stepPoints[i].progress + stepPoints[i + 1].progress) / 2,
+      }))
+    : []
+
+/**
+ * Calculates the intersection point between two lines (AB) and (CD).
+ *
+ * @param {Segment} [a, b] - The first line segment defined by two points [AB].
+ * @param {Segment} [c, d] - The second line segment defined by two points [CD].
+ * @returns {Point} - The intersection point of the two lines.
+ */
+const intersection = ([a, b]: Segment, [c, d]: Segment): Point => {
+  const x1 = c.x
+  const x3 = a.x
+  const x21 = d.x - x1
+  const x43 = b.x - x3
+  const y1 = c.y
+  const y3 = a.y
+  const y21 = d.y - y1
+  const y43 = b.y - y3
+  const ua = (x43 * (y1 - y3) - y43 * (x1 - x3)) / (y43 * x21 - x43 * y21)
+  return { x: x1 + ua * x21, y: y1 + ua * y21 }
 }
 
-// Compute stroke outline for segment p12.
-const lineJoin = (p0: Point, p1: Point, p2: Point, p3: Point, width: number) => {
-  const u12 = perp(p1, p2)
+/**
+ * Computes a quadrilateral wrapping segment [P1P2] which elegantly connects to previous and next quadrilaterals thanks to P0 and
+ * P3 parameters.
+ *
+ * @param {Point|undefined} p0 - The first point of the chunk (optional).
+ * @param {Point} p1 - The second point of the chunk.
+ * @param {Point} p2 - The third point of the chunk.
+ * @param {Point|undefined} p3 - The fourth point of the chunk (optional).
+ * @param {number} width - The width of the resulting quadrilateral.
+ * @returns {string} - The SVG path string representing the chunk.
+ */
+const drawChunk = (p0: Point | undefined, p1: Point, p2: Point, p3: Point | undefined, width: number) => {
+  const perpP1P2 = perpendicular(p1, p2)
   const r = width / 2
-  let a = [p1[0] + u12[0] * r, p1[1] + u12[1] * r]
-  let b = [p2[0] + u12[0] * r, p2[1] + u12[1] * r]
-  let c = [p2[0] - u12[0] * r, p2[1] - u12[1] * r]
-  let d = [p1[0] - u12[0] * r, p1[1] - u12[1] * r]
+  let a: Point = { x: p1.x + perpP1P2.x * r, y: p1.y + perpP1P2.y * r }
+  let b: Point = { x: p2.x + perpP1P2.x * r, y: p2.y + perpP1P2.y * r }
+  let c: Point = { x: p2.x - perpP1P2.x * r, y: p2.y - perpP1P2.y * r }
+  let d: Point = { x: p1.x - perpP1P2.x * r, y: p1.y - perpP1P2.y * r }
 
   if (p0) {
-    // clip ad and dc using average of u01 and u12
-    const u01 = perp(p0, p1)
-    const e = [p1[0] + u01[0] + u12[0], p1[1] + u01[1] + u12[1]]
-    a = lineIntersect(p1, e, a, b)
-    d = lineIntersect(p1, e, d, c)
+    // clip [AB] and [DC] using average of perpP0P1 and perpP1p2
+    const perpP0P1 = perpendicular(p0, p1)
+    const e: Point = { x: p1.x + perpP0P1.x + perpP1P2.x, y: p1.y + perpP0P1.y + perpP1P2.y }
+    a = intersection([p1, e], [a, b])
+    d = intersection([p1, e], [d, c])
   }
 
   if (p3) {
-    // clip ab and dc using average of u12 and u23
-    const u23 = perp(p2, p3),
-      e = [p2[0] + u23[0] + u12[0], p2[1] + u23[1] + u12[1]]
-    b = lineIntersect(p2, e, a, b)
-    c = lineIntersect(p2, e, d, c)
+    // clip [AB] and [DC] using average of perpP1p2 and perpP2P3
+    const perpP2P3 = perpendicular(p2, p3)
+    const e: Point = { x: p2.x + perpP2P3.x + perpP1P2.x, y: p2.y + perpP2P3.y + perpP1P2.y }
+    b = intersection([p2, e], [a, b])
+    c = intersection([p2, e], [d, c])
   }
 
-  return 'M' + a + 'L' + b + ' ' + c + ' ' + d + 'Z'
-}
-
-// Compute intersection of two infinite lines ab and cd.
-function lineIntersect(a: Point, b: Point, c: Point, d: Point) {
-  const x1 = c[0]
-  const x3 = a[0]
-  const x21 = d[0] - x1
-  const x43 = b[0] - x3
-  const y1 = c[1]
-  const y3 = a[1]
-  const y21 = d[1] - y1
-  const y43 = b[1] - y3
-  const ua = (x43 * (y1 - y3) - y43 * (x1 - x3)) / (y43 * x21 - x43 * y21)
-  return [x1 + ua * x21, y1 + ua * y21]
+  return `M${a.x},${a.y}L${b.x},${b.y} ${c.x},${c.y} ${d.x},${d.y}Z`
 }
 
 /**
- * Compute unit vector perpendicular to p01.
- * @param p0
- * @param p1
+ * Compute unit vector perpendicular to segment [AB].
+ * @param {Point} a - point a
+ * @param {Point} b - point b
+ * @returns (Vector} Unit vector perpendicular to segment [AB]
  */
-const perp = (p0: Point, p1: Point) => {
-  const u01x = p0[1] - p1[1],
-    u01y = p1[0] - p0[0],
-    u01d = Math.sqrt(u01x * u01x + u01y * u01y)
-  return [u01x / u01d, u01y / u01d]
+const perpendicular = (a: Point, b: Point): Vector => {
+  const x = a.y - b.y
+  const y = b.x - a.x
+  const n = Math.sqrt(x * x + y * y)
+  return { x: x / n, y: y / n }
 }
 
 const color = interpolateRainbow
 setTimeout(() => {
   const path = select('path').remove()
 
+  const data = chunks(split(path.node() as SVGPathElement, 1))
   select('svg')
     .selectAll<SVGElementTagNameMap['path'], unknown>('path')
-    .data(quads(samples(path.node() as SVGPathElement, 8)))
+    .data(data)
     .enter()
     .append('path')
-    .style('fill', function (d) {
-      return color(d.t as number)
-    })
-    .style('stroke', function (d) {
-      return color(d.t as number)
-    })
-    .attr('d', function (d) {
-      return lineJoin(d[0], d[1], d[2], d[3], 32)
-    })
+    .style('fill', (d) => color(d.progress))
+    .style('stroke', (d) => color(d.progress))
+    .attr('d', ({ p0, p1, p2, p3 }: Chunk) => drawChunk(p0, p1, p2, p3, 32))
 }, 2000)
