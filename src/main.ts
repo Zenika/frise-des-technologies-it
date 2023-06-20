@@ -4,12 +4,14 @@ import type { DraggedElementBaseType } from 'd3-drag'
 import { drag as d3Drag } from 'd3-drag'
 import type { Force, Simulation } from 'd3-force'
 import { forceCollide, forceLink, forceManyBody, forceSimulation, forceX } from 'd3-force'
-import { scaleTime } from 'd3-scale'
+import { interpolateRgb } from 'd3-interpolate'
+import { scaleLinear, scaleTime } from 'd3-scale'
 import { select } from 'd3-selection'
 import { curveBumpX, line as d3Line } from 'd3-shape'
 import { timeYear } from 'd3-time'
 
 import { default as rawData } from './data.ts'
+import { chunks, drawChunk, split } from './gradient-path.ts'
 import './style.css'
 import type { Data, Link, Node } from './types.ts'
 
@@ -83,17 +85,6 @@ const line = d3Line().curve(curveBumpX)
 
 const x = ({ date }: Node) => xScale(date)
 
-const links = linksGroup
-  // we need to specify the Element type in generic as it cannot be inferred by the selector
-  .selectAll<SVGElementTagNameMap['path'], Link>('.link')
-  .data(data.links)
-  .join('path')
-  .classed('link', true)
-
-Object.keys(styles.link).forEach((key) => {
-  links.style(key, styles.link[key as keyof typeof styles.link])
-})
-
 const nodes = nodesGroup
   // we need to specify the Element type in generic as it cannot be inferred by the selector
   .selectAll<SVGElementTagNameMap['rect'], Node>('.node')
@@ -110,17 +101,6 @@ Object.keys(styles.node).forEach((key) => {
   nodes.style(key, styles.node[key as keyof typeof styles.node])
 })
 
-const ticked = () => {
-  // in this function we know y is not undefined because its value has been set when the simulation started
-  links.attr('d', ({ source, target }: Link) => {
-    return line([
-      [x(source), source.y as number],
-      [x(target), target.y as number],
-    ])
-  })
-  nodes.attr('x', x).attr('y', ({ y }) => y as number)
-}
-
 const forceLimits: Force<Node, undefined> = () => {
   data.nodes.forEach((node) => {
     const y = node.y as number
@@ -129,6 +109,10 @@ const forceLimits: Force<Node, undefined> = () => {
     node.y = y < min ? min : y > max ? max : y
   })
 }
+
+const selectAllLinks = () =>
+  // we need to specify the Element type in generic as it cannot be inferred by the selector
+  linksGroup.selectAll<SVGElementTagNameMap['path'], Link>('.link')
 
 const simulation: Simulation<Node, Link> = forceSimulation<Node>(data.nodes)
   .force('charge', forceManyBody<Node>().strength(-1))
@@ -141,7 +125,45 @@ const simulation: Simulation<Node, Link> = forceSimulation<Node>(data.nodes)
   )
   .force('limits', forceLimits)
   .force('links', forceLink(data.links).strength(1))
-  .on('tick', ticked)
+  .on('tick', () => {
+    linksGroup.selectAll('.gradient').remove()
+
+    const links = selectAllLinks()
+      .data(data.links)
+      .join('path')
+      .classed('link', true)
+      // in this function we know y is not undefined because its value has been set when the simulation started
+      .attr('d', ({ source, target }: Link) =>
+        line([
+          [x(source), source.y as number],
+          [x(target), target.y as number],
+        ])
+      )
+
+    Object.keys(styles.link).forEach((key) => {
+      links.style(key, styles.link[key as keyof typeof styles.link])
+    })
+
+    nodes.attr('x', x).attr('y', ({ y }) => y as number)
+  })
+  .on('end', () => {
+    selectAllLinks()
+      .remove()
+      .each(function ({ source, target }) {
+        const data = chunks(split(this, 1))
+
+        const colorRange = [source.color ?? styles.link.stroke, target.color ?? styles.link.stroke]
+        const colorScale = scaleLinear<string>().domain([0, 1]).range(colorRange).interpolate(interpolateRgb)
+
+        selectAllLinks()
+          .data(data)
+          .join('path')
+          .classed('gradient', true)
+          .style('fill', (d) => colorScale(d.progress))
+          .style('opacity', styles.link.opacity)
+          .attr('d', ({ p0, p1, p2, p3 }) => drawChunk(p0, p1, p2, p3, styles.link['stroke-width']))
+      })
+  })
 
 const drag = <DraggedElement extends DraggedElementBaseType, Datum>(simulation: Simulation<Node, undefined>) =>
   d3Drag<DraggedElement, Datum>()
