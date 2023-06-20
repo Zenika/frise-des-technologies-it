@@ -26,9 +26,12 @@ const styles = {
     'stroke-width': 3,
     width: 60,
   },
+  label: {
+    font: '6px sans-serif',
+  },
   link: {
     fill: 'none',
-    opacity: 0.4,
+    opacity: 0.6,
     stroke: 'grey',
     'stroke-width': 10,
   },
@@ -87,18 +90,30 @@ const x = ({ date }: Node) => xScale(date)
 
 const nodes = nodesGroup
   // we need to specify the Element type in generic as it cannot be inferred by the selector
-  .selectAll<SVGElementTagNameMap['rect'], Node>('.node')
+  .selectAll<SVGElementTagNameMap['g'], Node>('.node')
   .data<Node>(data.nodes)
-  .join('rect')
+  .enter()
+  .append('g')
   .classed('node', true)
+  .attr('transform', `translate(-${styles.node.width / 2}, -${styles.node.height / 2})`)
+
+const rects = nodes
+  .append('rect')
   .attr('width', styles.node.width)
   .attr('height', styles.node.height)
   .attr('rx', styles.link['stroke-width'])
-  .attr('transform', `translate(-${styles.node.width / 2}, -${styles.node.height / 2})`)
   .attr('title', ({ name }) => name)
 
+nodes
+  .append('text')
+  .attr('x', 5)
+  .attr('y', 9)
+  .style('font', styles.label.font)
+  .attr('dominant-baseline', 'central')
+  .text(({ name }) => name)
+
 Object.keys(styles.node).forEach((key) => {
-  nodes.style(key, styles.node[key as keyof typeof styles.node])
+  rects.style(key, styles.node[key as keyof typeof styles.node])
 })
 
 const forceLimits: Force<Node, undefined> = () => {
@@ -144,7 +159,10 @@ const simulation: Simulation<Node, Link> = forceSimulation<Node>(data.nodes)
       links.style(key, styles.link[key as keyof typeof styles.link])
     })
 
-    nodes.attr('x', x).attr('y', ({ y }) => y as number)
+    nodes.attr(
+      'transform',
+      ({ date, y }) => `translate(${-styles.node.width / 2 + xScale(date)}, ${-styles.node.height / 2 + (y as number)})`
+    )
   })
   .on('end', () => {
     selectAllLinks()
@@ -184,4 +202,4 @@ const drag = <DraggedElement extends DraggedElementBaseType, Datum>(simulation: 
       event.subject.fy = null
     })
 
-nodes.call(drag<SVGElementTagNameMap['rect'], Node>(simulation))
+nodes.call(drag<SVGElementTagNameMap['g'], Node>(simulation))
