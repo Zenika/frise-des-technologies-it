@@ -12,11 +12,12 @@ import { curveBumpX, line as d3Line } from 'd3-shape'
 import { timeYear } from 'd3-time'
 
 import { default as rawData } from './data.ts'
+import debounce from './debounce.ts'
+import download from './download.ts'
 import { chunks, drawChunk, split } from './gradient-path.ts'
 import showSolution from './show-solution-control.ts'
 import './style.css'
 import type { Data, Link, Node } from './types.ts'
-import debounce from './debounce.ts'
 
 const width = signal(window.innerWidth / 2)
 const height = signal(window.innerHeight / 2)
@@ -42,7 +43,10 @@ const styles = {
   },
 }
 
-const svg = select('#app').append('svg:svg').attr('preserveAspectRatio', 'xMidYMid meet').attr('pointer-events', 'all')
+const svg = select('#app')
+  .append<SVGSVGElement>('svg:svg')
+  .attr('preserveAspectRatio', 'xMidYMid meet')
+  .attr('pointer-events', 'all')
 
 effect(() => {
   svg.attr('viewBox', `0 0 ${width} ${height}`)
@@ -219,4 +223,7 @@ window.addEventListener(
     height.value = window.innerHeight / 2
     simulation.restart()
   }, 500)
+)
+;(document.querySelector('#download') as HTMLButtonElement).addEventListener('click', () =>
+  download(svg.node() as SVGGElement)
 )
