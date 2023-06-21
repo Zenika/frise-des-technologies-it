@@ -1,13 +1,13 @@
-/*
- * adapted from https://chartio.com/resources/tutorials/how-to-resize-an-svg-when-the-window-is-resized-in-d3-js/
- */
+body {
+  font-family: 'sans-serif';
+}
+
 #app {
-  display: inline-block;
-  position: relative;
-  width: 100%;
-  padding-bottom: 100%;
-  vertical-align: top;
-  overflow: hidden;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 
 svg {
@@ -15,6 +15,15 @@ svg {
   position: absolute;
   top: 0;
   left: 0;
+}
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2em;
+  padding-left: 1em;
 }
 
 .node:hover {

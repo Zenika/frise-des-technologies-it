@@ -1,3 +1,4 @@
+import { computed, effect, signal } from '@preact/signals-core'
 import { extent } from 'd3-array'
 import { axisBottom } from 'd3-axis'
 import type { DraggedElementBaseType } from 'd3-drag'
@@ -12,11 +13,15 @@ import { timeYear } from 'd3-time'
 
 import { default as rawData } from './data.ts'
 import { chunks, drawChunk, split } from './gradient-path.ts'
+import showSolution from './show-solution-control.ts'
 import './style.css'
 import type { Data, Link, Node } from './types.ts'
+import debounce from './debounce.ts'
 
-const width = window.innerWidth / 2
-const height = window.innerHeight / 2
+const width = signal(window.innerWidth / 2)
+const height = signal(window.innerHeight / 2)
+
+const axisY = computed(() => height.value - 20)
 
 const styles = {
   node: {
@@ -35,16 +40,13 @@ const styles = {
     stroke: 'grey',
     'stroke-width': 10,
   },
-  axis: {
-    height: height - 20,
-  },
 }
 
-const svg = select('#app')
-  .append('svg:svg')
-  .attr('preserveAspectRatio', 'xMinYMin meet')
-  .attr('viewBox', `0 0 ${width} ${height}`)
-  .attr('pointer-events', 'all')
+const svg = select('#app').append('svg:svg').attr('preserveAspectRatio', 'xMidYMid meet').attr('pointer-events', 'all')
+
+effect(() => {
+  svg.attr('viewBox', `0 0 ${width} ${height}`)
+})
 
 const content = svg
   .append('g')
@@ -76,13 +78,14 @@ const data: Data = {
   }, [] as Link[]),
 }
 
-const xScale = scaleTime()
-  .domain(
-    data.nodes.length >= 2 ? (extent(data.nodes.map(({ date }) => date)) as [Date, Date]) : [new Date(0), new Date()]
-  )
-  .range([0, width - styles.node.width - styles.node['stroke-width']])
+const xScale = scaleTime().domain(
+  data.nodes.length >= 2 ? (extent(data.nodes.map(({ date }) => date)) as [Date, Date]) : [new Date(0), new Date()]
+)
 
-axis.attr('transform', `translate(0, ${styles.axis.height})`).call(axisBottom(xScale).ticks(timeYear.every(3)))
+effect(() => {
+  xScale.range([0, width.value - styles.node.width - styles.node['stroke-width']])
+  axis.attr('transform', `translate(0, ${axisY})`).call(axisBottom(xScale).ticks(timeYear.every(3)))
+})
 
 const line = d3Line().curve(curveBumpX)
 
@@ -104,13 +107,18 @@ const rects = nodes
   .attr('rx', styles.link['stroke-width'])
   .attr('title', ({ name }) => name)
 
-nodes
+const labels = nodes
   .append('text')
   .attr('x', 5)
   .attr('y', 9)
   .style('font', styles.label.font)
+
   .attr('dominant-baseline', 'central')
   .text(({ name }) => name)
+
+effect(() => {
+  labels.style('display', showSolution.value ? 'block' : 'none')
+})
 
 Object.keys(styles.node).forEach((key) => {
   rects.style(key, styles.node[key as keyof typeof styles.node])
@@ -120,7 +128,7 @@ const forceLimits: Force<Node, undefined> = () => {
   data.nodes.forEach((node) => {
     const y = node.y as number
     const min = (styles.node.height + styles.node['stroke-width']) / 2
-    const max = styles.axis.height - (styles.node.height + styles.node['stroke-width']) / 2
+    const max = axisY.value - (styles.node.height + styles.node['stroke-width']) / 2
     node.y = y < min ? min : y > max ? max : y
   })
 }
@@ -203,3 +211,12 @@ const drag = <DraggedElement extends DraggedElementBaseType, Datum>(simulation: 
     })
 
 nodes.call(drag<SVGElementTagNameMap['g'], Node>(simulation))
+
+window.addEventListener(
+  'resize',
+  debounce(() => {
+    width.value = window.innerWidth / 2
+    height.value = window.innerHeight / 2
+    simulation.restart()
+  }, 500)
+)
