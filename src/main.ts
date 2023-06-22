@@ -33,7 +33,8 @@ const styles = {
     width: 60,
   },
   label: {
-    font: '6px sans-serif',
+    'font-family': 'sans-serif',
+    'font-size': 5,
   },
   link: {
     fill: 'none',
@@ -111,17 +112,27 @@ const rects = nodes
   .attr('rx', styles.link['stroke-width'])
   .attr('title', ({ name }) => name)
 
-const labels = nodes
-  .append('text')
-  .attr('x', 5)
-  .attr('y', 9)
-  .style('font', styles.label.font)
+const solutions = nodes.append('g')
 
+solutions
+  .append('image')
+  .attr('transform', `translate(${styles.node['stroke-width'] / 2}, ${styles.node['stroke-width'] / 2 + 2})`)
+  .attr('href', ({ logo }) => logo)
+  .attr('width', styles.node.width - styles.node['stroke-width'])
+  .attr('height', styles.node.height - styles.node['stroke-width'] - styles.label['font-size'] - 8)
+
+solutions
+  .append('text')
+  .style('font-family', styles.label['font-family'])
+  .style('font-size', styles.label['font-size'] + 'px')
+  .attr('x', styles.node.width / 2)
+  .attr('y', styles.node.height - 8)
   .attr('dominant-baseline', 'central')
+  .attr('text-anchor', 'middle')
   .text(({ name }) => name)
 
 effect(() => {
-  labels.style('display', showSolution.value ? 'block' : 'none')
+  solutions.style('display', showSolution.value ? 'block' : 'none')
 })
 
 Object.keys(styles.node).forEach((key) => {

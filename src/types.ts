@@ -5,6 +5,7 @@ export interface Node extends SimulationNodeDatum {
   name: string
   date: Date
   color: string
+  logo: string
 }
 
 export interface Link {
