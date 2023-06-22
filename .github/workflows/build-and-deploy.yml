@@ -39,6 +39,12 @@ jobs:
         run: |
           pnpm install
           pnpm run build
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: build
+          path: dist
 
   # Deploy job
   deploy:
