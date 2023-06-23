@@ -10,9 +10,9 @@ import { scaleLinear, scaleTime } from 'd3-scale'
 import { select } from 'd3-selection'
 import { curveBumpX, line as d3Line } from 'd3-shape'
 import { timeYear } from 'd3-time'
-import * as dayjs from 'dayjs'
+import { addYears } from 'date-fns'
 
-import { toggleSolution, toggleGrid } from './controls.ts'
+import { toggleGrid, toggleSolution } from './controls.ts'
 import { default as rawData } from './data.ts'
 import debounce from './debounce.ts'
 import download from './download.ts'
@@ -88,9 +88,7 @@ const data: Data = {
 const xScale = scaleTime().domain(
   data.nodes.length >= 2
     ? (extent([...data.nodes.map(({ date }) => date), new Date()]) as [Date, Date]).map((date, i) =>
-        dayjs(date)
-          .add(i === 0 ? -2 : 2, 'year')
-          .toDate()
+        addYears(date, i === 0 ? -2 : 2)
       )
     : [new Date(0), new Date()]
 )
