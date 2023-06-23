@@ -20,7 +20,7 @@ import { chunks, drawChunk, split } from './gradient-path.ts'
 import './style.css'
 import type { Data, Link, Node } from './types.ts'
 
-const width = signal(window.innerWidth / 2)
+const width = signal(window.innerWidth)
 const height = signal(window.innerHeight / 2)
 
 const axisY = computed(() => height.value - 20)
