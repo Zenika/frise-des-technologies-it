@@ -12,11 +12,11 @@ import { curveBumpX, line as d3Line } from 'd3-shape'
 import { timeYear } from 'd3-time'
 import * as dayjs from 'dayjs'
 
+import { toggleSolution, toggleGrid } from './controls.ts'
 import { default as rawData } from './data.ts'
 import debounce from './debounce.ts'
 import download from './download.ts'
 import { chunks, drawChunk, split } from './gradient-path.ts'
-import showSolution from './show-solution-control.ts'
 import './style.css'
 import type { Data, Link, Node } from './types.ts'
 
@@ -58,12 +58,13 @@ const content = svg
   .append('g')
   .attr('transform', `translate(${(styles.node.width + styles.node['stroke-width']) / 2}, 0)`)
 
+const timeline = content.append('g')
+const grid = content.append('g')
+
 const graph = content.append('g')
 
 const linksGroup = graph.append('g')
 const nodesGroup = graph.append('g')
-
-const axis = content.append('g')
 
 const nodeMap = rawData.nodes.reduce((acc, { id, date, ...rest }) => {
   acc.set(id, { id, date: new Date(date), ...rest })
@@ -96,7 +97,20 @@ const xScale = scaleTime().domain(
 
 effect(() => {
   xScale.range([0, width.value - styles.node.width - styles.node['stroke-width']])
-  axis.attr('transform', `translate(0, ${axisY})`).call(axisBottom(xScale).ticks(timeYear.every(3)))
+  timeline.attr('transform', `translate(0, ${axisY.value})`).call(axisBottom(xScale).ticks(timeYear.every(1)))
+
+  grid
+    .attr('transform', `translate(0, ${axisY.value})`)
+    .style('opacity', 0.1)
+    .style('stroke-dasharray', 2)
+    .style('display', toggleGrid.value ? 'block' : 'none')
+    .call(
+      axisBottom(xScale)
+        .tickSizeInner(-axisY.value)
+        .tickSizeOuter(0)
+        .tickValues(data.nodes.map(({ date }) => date))
+        .tickFormat(() => '')
+    )
 })
 
 const line = d3Line().curve(curveBumpX)
@@ -139,7 +153,7 @@ solutions
   .text(({ name }) => name)
 
 effect(() => {
-  solutions.style('display', showSolution.value ? 'block' : 'none')
+  solutions.style('display', toggleSolution.value ? 'block' : 'none')
 })
 
 Object.keys(styles.node).forEach((key) => {
