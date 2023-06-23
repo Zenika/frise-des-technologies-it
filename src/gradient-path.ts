@@ -23,10 +23,10 @@ interface Chunk {
 }
 
 /**
- Splits an SVG path into an array of points based on a specified sample length.
- @param {SVGPathElement} path - The SVG path element to be split.
- @param {number} sampleLength - The length between each sampled point.
- @returns {StepPoint[]} An array of points representing the split path.
+ * Splits an SVG path into an array of points based on a specified sample length.
+ * @param {SVGPathElement} path - The SVG path element to be split.
+ * @param {number} sampleLength - The length between each sampled point.
+ * @returns {StepPoint[]} An array of points representing the split path.
  */
 const split: (path: SVGPathElement, sampleLength: number) => StepPoint[] = (
   path: SVGPathElement,
