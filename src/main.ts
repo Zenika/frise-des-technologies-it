@@ -10,6 +10,7 @@ import { scaleLinear, scaleTime } from 'd3-scale'
 import { select } from 'd3-selection'
 import { curveBumpX, line as d3Line } from 'd3-shape'
 import { timeYear } from 'd3-time'
+import { zoom as d3Zoom } from 'd3-zoom'
 import { addYears } from 'date-fns'
 
 import { toggleGrid, toggleSolution } from './controls.ts'
@@ -20,8 +21,16 @@ import { chunks, drawChunk, split } from './gradient-path.ts'
 import './style.css'
 import type { Data, Link, Node } from './types.ts'
 
-const width = signal(window.innerWidth)
-const height = signal(window.innerHeight / 2)
+const zoomFactor = signal(1)
+
+const width = signal(window.innerWidth / zoomFactor.value)
+const height = signal(window.innerHeight / zoomFactor.value)
+
+const refresh = () => {
+  width.value = window.innerWidth / zoomFactor.value
+  height.value = window.innerHeight / zoomFactor.value
+  simulation.restart()
+}
 
 const axisY = computed(() => height.value - 20)
 
@@ -51,8 +60,23 @@ const svg = select('#app')
   .attr('pointer-events', 'all')
 
 effect(() => {
-  svg.attr('viewBox', `0 0 ${width} ${height}`)
+  svg.attr('viewBox', `0 0 ${width.value} ${height.value}`)
 })
+
+svg
+  .append('rect')
+  .attr('fill', 'none')
+  .attr('pointer-events', 'all')
+  .attr('width', '100%')
+  .attr('height', '100%')
+  .call(
+    d3Zoom<SVGRectElement, unknown>()
+      .scaleExtent([0.1, 2])
+      .on('zoom', (event) => {
+        zoomFactor.value = event.transform.k
+        refresh()
+      })
+  )
 
 const content = svg
   .append('g')
@@ -224,7 +248,6 @@ const simulation: Simulation<Node, Link> = forceSimulation<Node>(data.nodes)
           .attr('d', ({ p0, p1, p2, p3 }) => drawChunk(p0, p1, p2, p3, styles.link['stroke-width']))
       })
   })
-
 const drag = <DraggedElement extends DraggedElementBaseType, Datum>(simulation: Simulation<Node, undefined>) =>
   d3Drag<DraggedElement, Datum>()
     .on('start', (event) => {
@@ -249,9 +272,7 @@ nodes.call(drag<SVGElementTagNameMap['g'], Node>(simulation))
 window.addEventListener(
   'resize',
   debounce(() => {
-    width.value = window.innerWidth / 2
-    height.value = window.innerHeight / 2
-    simulation.restart()
+    refresh()
   }, 500)
 )
 ;(document.querySelector('#download') as HTMLButtonElement).addEventListener('click', () =>
