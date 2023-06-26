@@ -1,7 +1,6 @@
 import { computed, effect, signal } from '@preact/signals-core'
 import { extent } from 'd3-array'
 import { axisBottom } from 'd3-axis'
-import type { DraggedElementBaseType } from 'd3-drag'
 import { drag as d3Drag } from 'd3-drag'
 import type { Force, Simulation } from 'd3-force'
 import { forceCollide, forceLink, forceManyBody, forceSimulation, forceX } from 'd3-force'
@@ -181,12 +180,13 @@ Object.keys(styles.node).forEach((key) => {
   rects.style(key, styles.node[key as keyof typeof styles.node])
 })
 
+const yMin = (styles.node.height + styles.node['stroke-width']) / 2
+const yMax = computed(() => axisY.value - (styles.node.height + styles.node['stroke-width']) / 2)
+const clamp = (y: number) => (y < yMin ? yMin : y > yMax.value ? yMax.value : y)
 const forceLimits: Force<Node, undefined> = () => {
   data.nodes.forEach((node) => {
     const y = node.y as number
-    const min = (styles.node.height + styles.node['stroke-width']) / 2
-    const max = axisY.value - (styles.node.height + styles.node['stroke-width']) / 2
-    node.y = y < min ? min : y > max ? max : y
+    node.y = clamp(y)
   })
 }
 
@@ -251,26 +251,20 @@ const simulation: Simulation<Node, Link> = forceSimulation<Node>(data.nodes)
           .attr('d', ({ p0, p1, p2, p3 }) => drawChunk(p0, p1, p2, p3, styles.link['stroke-width']))
       })
   })
-const drag = <DraggedElement extends DraggedElementBaseType, Datum>(simulation: Simulation<Node, undefined>) =>
-  d3Drag<DraggedElement, Datum>()
-    .on('start', (event) => {
-      if (!event.active) {
-        simulation.alphaTarget(0.3).restart()
-      }
-      event.subject.fx = event.subject.x
-      event.subject.fy = event.subject.y
+const drag = (simulation: Simulation<Node, undefined>) =>
+  d3Drag<SVGElementTagNameMap['g'], Node>()
+    .on('start', function () {
+      select(this).classed('fixed', true)
     })
-    .on('drag', (event) => {
-      event.subject.fx = event.x
-      event.subject.fy = event.y
-    })
-    .on('end', (event) => {
-      if (!event.active) simulation.alphaTarget(0)
-      event.subject.fx = null
-      event.subject.fy = null
+    .on('drag', (event, d) => {
+      d.fy = clamp(event.y)
+      simulation.alpha(1).restart()
     })
 
-nodes.call(drag<SVGElementTagNameMap['g'], Node>(simulation))
+nodes.call(drag(simulation)).on('click', function (_, d) {
+  delete d.fy
+  select(this).classed('fixed', false)
+})
 
 window.addEventListener(
   'resize',

@@ -30,3 +30,7 @@ svg {
 .node:hover {
   cursor: row-resize;
 }
+
+.fixed rect {
+  fill: red !important;
+}
