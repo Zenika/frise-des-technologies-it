@@ -40,7 +40,7 @@ const styles = {
     height: 50,
     stroke: 'black',
     'stroke-width': 3,
-    width: 60,
+    width: 36,
   },
   label: {
     'font-family': 'sans-serif',
@@ -159,9 +159,9 @@ const solutions = nodes.append('g')
 
 solutions
   .append('image')
-  .attr('transform', `translate(${styles.node['stroke-width'] / 2}, ${styles.node['stroke-width'] / 2 + 2})`)
+  .attr('transform', `translate(${styles.node['stroke-width'] * 2}, ${styles.node['stroke-width'] / 2 + 2})`)
   .attr('href', ({ logo }) => logo)
-  .attr('width', styles.node.width - styles.node['stroke-width'])
+  .attr('width', styles.node.width - styles.node['stroke-width'] * 4)
   .attr('height', styles.node.height - styles.node['stroke-width'] - styles.label['font-size'] - 8)
 
 solutions
