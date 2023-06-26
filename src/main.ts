@@ -117,7 +117,7 @@ const xScale = scaleTime().domain(
 
 effect(() => {
   xScale.range([0, width.value - styles.node.width - styles.node['stroke-width']])
-  timeline.attr('transform', `translate(0, ${axisY.value})`).call(axisBottom(xScale).ticks(timeYear.every(1)))
+  timeline.attr('transform', `translate(0, ${axisY.value})`).call(axisBottom(xScale).ticks(timeYear.every(2)))
 
   grid
     .attr('transform', `translate(0, ${axisY.value})`)
