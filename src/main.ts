@@ -49,7 +49,6 @@ const styles = {
   link: {
     fill: 'none',
     opacity: 0.6,
-    stroke: 'grey',
     'stroke-width': 10,
   },
 }
@@ -195,6 +194,9 @@ const selectAllLinks = () =>
   // we need to specify the Element type in generic as it cannot be inferred by the selector
   linksGroup.selectAll<SVGElementTagNameMap['path'], Link>('.link')
 
+const selectAllGradientCandidateLinks = () =>
+  selectAllLinks().filter(({ source, target }) => source.color !== target.color)
+
 const simulation: Simulation<Node, Link> = forceSimulation<Node>(data.nodes)
   .force('charge', forceManyBody<Node>().strength(-1))
   .force('x', forceX<Node>().x(x).strength(1))
@@ -213,6 +215,7 @@ const simulation: Simulation<Node, Link> = forceSimulation<Node>(data.nodes)
       .data(data.links)
       .join('path')
       .classed('link', true)
+      .style('stroke', ({ source }) => source.color)
       // in this function we know y is not undefined because its value has been set when the simulation started
       .attr('d', ({ source, target }: Link) =>
         line([
@@ -231,15 +234,15 @@ const simulation: Simulation<Node, Link> = forceSimulation<Node>(data.nodes)
     )
   })
   .on('end', () => {
-    selectAllLinks()
+    selectAllGradientCandidateLinks()
       .remove()
       .each(function ({ source, target }) {
         const data = chunks(split(this, 1))
 
-        const colorRange = [source.color ?? styles.link.stroke, target.color ?? styles.link.stroke]
+        const colorRange = [source.color, target.color]
         const colorScale = scaleLinear<string>().domain([0, 1]).range(colorRange).interpolate(interpolateRgb)
 
-        selectAllLinks()
+        selectAllGradientCandidateLinks()
           .data(data)
           .join('path')
           .classed('gradient', true)
