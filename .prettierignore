@@ -1,0 +1,9 @@
+node_modules
+.DS_Store
+dist
+*.local
+.idea
+*.iml
+.pnpm-store
+# DO NOT format generated files
+pnpm-lock.yaml
